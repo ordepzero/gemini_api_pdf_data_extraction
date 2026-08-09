@@ -1,0 +1,22 @@
+[project]
+name = "rag-budget"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Pedro Ulisses", email = "ulissesph@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=2.17.0",
+    "load-dotenv>=0.1.0",
+    "pydantic>=2.11.7",
+    "streamlit>=1.61.1",
+]
+
+[project.scripts]
+rag-budget = "rag_budget:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
