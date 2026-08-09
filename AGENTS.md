@@ -65,3 +65,9 @@ O projeto adota uma arquitetura em camadas modular (*Core + Deliveries*):
 - **Validação de Dados**: Pydantic v2
 - Use o python disponível em .venv
 
+
+## Regra de Modelo Gemini
+- O modelo padrao do projeto e gemini-3.6-flash.
+- Nunca rebaixar para gemini-2.5-flash ou versao anterior sem solicitacao explicita do usuario.
+- Nenhum fallback hardcoded de modelo Gemini pode existir fora de src/core/config.py.
+

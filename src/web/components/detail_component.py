@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import base64
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
 from core.schemas.budget_schema import OrcamentoSchema
+from web.components.pdf_viewer import renderPdfViewer
 
 
 def renderDocumentDetail(selectedDocument: dict[str, object] | None) -> None:
@@ -20,7 +18,7 @@ def renderDocumentDetail(selectedDocument: dict[str, object] | None) -> None:
     previewTab, extractedDataTab = st.tabs(["Visualizacao do PDF", "Dados extraidos (Gemini)"])
 
     with previewTab:
-        _renderPdfPreview(filePath=Path(str(selectedDocument["file_path"])))
+        renderPdfViewer(file_path=str(selectedDocument["file_path"]))
 
     with extractedDataTab:
         extractedData = OrcamentoSchema.model_validate(selectedDocument["extracted_data"])
@@ -57,22 +55,6 @@ def renderDocumentDetail(selectedDocument: dict[str, object] | None) -> None:
             )
             st.dataframe(itemsDataframe, width="stretch", hide_index=True)
             st.form_submit_button("Confirmar conferencia", type="primary")
-
-
-def _renderPdfPreview(filePath: Path) -> None:
-    if not filePath.exists():
-        st.error("O arquivo PDF selecionado nao foi encontrado no armazenamento local.")
-        return
-
-    pdfBytes = filePath.read_bytes()
-    base64Pdf = base64.b64encode(pdfBytes).decode("utf-8")
-    st.markdown(
-        (
-            f'<iframe src="data:application/pdf;base64,{base64Pdf}" '
-            'width="100%" height="700" type="application/pdf"></iframe>'
-        ),
-        unsafe_allow_html=True,
-    )
 
 
 def _formatCurrency(value: float | None) -> str:

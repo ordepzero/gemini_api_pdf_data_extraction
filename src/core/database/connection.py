@@ -13,7 +13,12 @@ class Base(DeclarativeBase):
 
 
 settings = getSettings()
-engine = create_engine(settings.databaseUrl, future=True, echo=False)
+engine = create_engine(
+    settings.databaseUrl,
+    future=True,
+    echo=False,
+    connect_args={"check_same_thread": False} if settings.databaseUrl.startswith("sqlite") else {},
+)
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,

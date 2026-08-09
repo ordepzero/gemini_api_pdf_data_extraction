@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
 from core.config import getSettings
-from core.schemas.budget_schema import OrcamentoSchema
+from core.services.budget_db_service import saveProcessedBudget
 from core.services.extractor import extract_budget_data
 from core.services.storage_service import StorageServiceError, save_uploaded_file
 from web.components.dashboard_component import renderTopSection
@@ -97,7 +98,7 @@ def _renderCurrentUploadStatus() -> None:
 
     actionCol, clearCol = st.columns([2, 1])
     if actionCol.button(
-        "[🚀 Extrair Dados com Gemini]",
+        "🚀 Extrair Dados com Gemini",
         key="process_current_uploaded_file",
         type="primary",
         width="stretch",
@@ -131,13 +132,11 @@ def _processCurrentUploadedFile() -> None:
         st.error(f"Erro na extração: {error}")
         return
 
-    documentsByName: dict[str, dict[str, object]] = st.session_state["documents_by_name"]
-    finalName = str(currentUploadedFile["final_name"])
-    documentsByName[finalName] = _buildDocumentRecord(
+    savedBudget = saveProcessedBudget(
         saveResult=currentUploadedFile,
         extractedBudget=extractedBudget,
     )
-    st.session_state["selected_document"] = finalName
+    st.session_state["selected_document"] = str(savedBudget["file_name"])
     _clearCurrentUploadedFile(removePhysicalFile=False)
     st.toast("Extração concluída!")
     st.rerun()
@@ -146,8 +145,6 @@ def _processCurrentUploadedFile() -> None:
 def _clearCurrentUploadedFile(removePhysicalFile: bool) -> None:
     currentUploadedFile = st.session_state.get("current_uploaded_file")
     if removePhysicalFile and isinstance(currentUploadedFile, dict):
-        from pathlib import Path
-
         filePath = Path(str(currentUploadedFile["file_path"]))
         if filePath.exists():
             filePath.unlink()
@@ -171,29 +168,6 @@ def _ensureMinimumLoadingTime(startTime: float) -> None:
     elapsedTime = time.perf_counter() - startTime
     remainingTime = max(0.0, minimumLoadingTimeSeconds - elapsedTime)
     time.sleep(remainingTime)
-
-
-def _buildDocumentRecord(
-    saveResult: dict[str, Any],
-    extractedBudget: OrcamentoSchema,
-) -> dict[str, object]:
-    clientName = extractedBudget.cliente.nome if extractedBudget.cliente and extractedBudget.cliente.nome else ""
-    sellerName = extractedBudget.vendedor.nome if extractedBudget.vendedor and extractedBudget.vendedor.nome else ""
-    documentDate = extractedBudget.dataEmissao or ""
-    totalAmount = extractedBudget.valorTotal or 0.0
-    hasPendingData = not clientName or not extractedBudget.itens
-
-    return {
-        "file_name": str(saveResult["final_name"]),
-        "file_path": str(saveResult["file_path"]),
-        "original_name": str(saveResult["original_name"]),
-        "created_at": documentDate,
-        "status": "Com Pendencia" if hasPendingData else "Processado",
-        "client_name": clientName,
-        "seller_name": sellerName,
-        "total_amount": totalAmount,
-        "extracted_data": extractedBudget.model_dump(),
-    }
 
 
 def _filterDocuments(
